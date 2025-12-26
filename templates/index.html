@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌍 Анализатор концентраций точек на карте</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --success-color: #4cc9f0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .header-gradient {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .step-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .upload-area {
+            border: 3px dashed #adb5bd;
+            border-radius: 15px;
+            padding: 50px 20px;
+            text-align: center;
+            background-color: var(--light-color);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 60px;
+            color: #adb5bd;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover .upload-icon {
+            color: var(--primary-color);
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 10px;
+            color: white;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+        }
+        
+        .btn-primary-custom:disabled {
+            background: #adb5bd;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-success-custom {
+            background: linear-gradient(90deg, #20c997, #198754);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 10px;
+            color: white;
+            transition: all 0.3s;
+        }
+        
+        .result-item {
+            background: var(--light-color);
+            border-left: 5px solid var(--success-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .result-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-container {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .coordinate-format {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .table-custom {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .table-custom thead {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        
+        .table-custom th {
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+        }
+        
+        .table-custom td {
+            padding: 12px 15px;
+            vertical-align: middle;
+        }
+        
+        .badge-custom {
+            background: linear-gradient(90deg, var(--success-color), #4895ef);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .map-preview {
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+        
+        .tooltip-custom {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip-custom .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+        }
+        
+        .tooltip-custom:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="main-container">
+            <!-- Шапка -->
+            <div class="header-gradient text-center">
+                <h1 class="display-5 fw-bold mb-3">
+                    <i class="fas fa-map-marked-alt me-3"></i>Анализатор концентраций точек
+                </h1>
+                <p class="lead mb-0">Найдите места с наибольшей концентрацией точек на карте из Excel файла</p>
+            </div>
+
+            <!-- Основное содержимое -->
+            <div class="p-4 p-md-5">
+                <!-- Шаг 1: Загрузка файла -->
+                <div class="step-card p-4 animate-fade-in">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">1</span>
+                        </div>
+                        <h4 class="mb-0"><i class="fas fa-file-upload text-primary me-2"></i>Загрузите Excel файл</h4>
+                    </div>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h5>Перетащите файл сюда или кликните для выбора</h5>
+                        <p class="text-muted mb-2">Поддерживаются файлы .xlsx и .xls</p>
+                        <input type="file" id="fileInput" class="form-control d-none" accept=".xlsx,.xls">
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-outline-primary">
+                                <i class="fas fa-folder-open me-2"></i>Выбрать файл
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="fileInfo" class="mt-4" style="display: none;">
+                        <div class="alert alert-success alert-custom">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle fa-2x me-3 text-success"></i>
+                                <div>
+                                    <h6 class="mb-1">Файл загружен:</h6>
+                                    <p class="mb-0" id="fileName"></p>
+                                    <small class="text-muted" id="fileSize"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="coordinate-format mt-3">
+                        <h6><i class="fas fa-info-circle text-info me-2"></i>Формат координат в Excel:</h6>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <code>55.755826, 37.617300</code>
+                            </div>
+                            <div class="col-md-4">
+                                <code>55.755826 37.617300</code>
+                            </div>
+                            <div class="col-md-4">
+                                <code>55.755826;37.617300</code>
+                            </div>
+                        </div>
+                        <p class="mb-0 mt-2 text-muted">Одна строка = одна точка. Поддерживаются все форматы.</p>
+                    </div>
+                </div>
+
+                <!-- Шаг 2: Настройки анализа -->
+                <div class="step-card p-4 animate-fade-in" id="settingsSection" style="display: none;">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">2</span>
+                        </div>
+                        <h4 class="mb-0"><i class="fas fa-sliders-h text-primary me-2"></i>Настройки анализа</h4>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="columnName" class="form-label fw-bold">
+                                <i class="fas fa-columns me-2"></i>Столбец с координатами:
+                            </label>
+                            <select id="columnName" class="form-select form-select-lg" disabled>
+                                <option value="">Загрузите файл чтобы увидеть столбцы...</option>
+                            </select>
+                            <div class="form-text">Выберите столбец, содержащий координаты</div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="radius" class="form-label fw-bold">
+                                <i class="fas fa-expand-alt me-2"></i>Радиус анализа:
+                            </label>
+                            <div class="input-group">
+                                <input type="number" id="radius" class="form-control form-control-lg" value="500" min="10" max="5000" step="50">
+                                <span class="input-group-text">метров</span>
+                            </div>
+                            <div class="form-text">В пределах скольки метров искать точки</div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="minPoints" class="form-label fw-bold">
+                                <i class="fas fa-bullseye me-2"></i>Минимум точек:
+                            </label>
+                            <input type="number" id="minPoints" class="form-control form-control-lg" value="10" min="2" max="100">
+                            <div class="form-text">Минимальное количество точек для концентрации</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button id="analyzeBtn" class="btn btn-primary-custom btn-lg" disabled>
+                            <i class="fas fa-search me-2"></i>Начать анализ концентраций
+                        </button>
+                        <div class="loader" id="loader"></div>
+                        
+                        <div class="progress-container mt-3" style="display: none;" id="progressContainer">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Шаг 3: Результаты -->
+                <div class="step-card p-4 animate-fade-in" id="resultsSection" style="display: none;">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">3</span>
+                        </div>
+                        <h4 class="mb-0"><i class="fas fa-chart-bar text-success me-2"></i>Результаты анализа</h4>
+                    </div>
+                    
+                    <!-- Статистика -->
+                    <div class="row mb-4" id="stats"></div>
+                    
+                    <!-- Кнопки действий -->
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <a href="#" id="mapLink" target="_blank" class="btn btn-success-custom">
+                            <i class="fas fa-map-marked-alt me-2"></i>Открыть интерактивную карту
+                        </a>
+                        <button id="exportBtn" class="btn btn-outline-primary">
+                            <i class="fas fa-file-excel me-2"></i>Экспорт результатов в Excel
+                        </button>
+                        <button id="newAnalysisBtn" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo me-2"></i>Новый анализ
+                        </button>
+                    </div>
+                    
+                    <!-- Предпросмотр карты -->
+                    <div class="map-preview" id="mapPreview">
+                        <div class="text-center">
+                            <i class="fas fa-map fa-3x mb-3"></i>
+                            <p>Интерактивная карта с результатами</p>
+                            <small>Нажмите "Открыть карту" для просмотра</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Таблица результатов -->
+                    <div class="mt-4">
+                        <h5 class="mb-3"><i class="fas fa-table me-2"></i>Топ концентраций:</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom" id="resultsTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Адрес</th>
+                                        <th>Широта</th>
+                                        <th>Долгота</th>
+                                        <th class="text-center">Точек</th>
+                                        <th>Ср. расстояние</th>
+                                        <th>Плотность</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Информационная панель -->
+                <div class="step-card p-4 mt-4 animate-fade-in">
+                    <h5><i class="fas fa-lightbulb text-warning me-2"></i>Как это работает?</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-file-excel fa-lg text-white"></i>
+                                </div>
+                                <h6>Загрузите Excel</h6>
+                                <p class="small text-muted">Файл с координатами в любом формате</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-cogs fa-lg text-white"></i>
+                                </div>
+                                <h6>Настройте анализ</h6>
+                                <p class="small text-muted">Выберите радиус и минимальное количество точек</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-map-marked-alt fa-lg text-white"></i>
+                                </div>
+                                <h6>Получите карту</h6>
+                                <p class="small text-muted">Интерактивная карта с концентрациями</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-download fa-lg text-white"></i>
+                                </div>
+                                <h6>Экспортируйте</h6>
+                                <p class="small text-muted">Скачайте результаты в Excel</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Футер -->
+            <div class="bg-light p-4 text-center">
+                <p class="mb-2 text-muted">
+                    <i class="fas fa-code me-2"></i>Анализатор концентраций точек v1.0
+                </p>
+                <p class="small text-muted mb-0">
+                    Для работы требуется интернет-соединение. Используется OpenStreetMap и Nominatim для геокодирования.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Элементы DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileInfo = document.getElementById('fileInfo');
+        const columnName = document.getElementById('columnName');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loader = document.getElementById('loader');
+        const resultsSection = document.getElementById('resultsSection');
+        const settingsSection = document.getElementById('settingsSection');
+        const mapLink = document.getElementById('mapLink');
+        const exportBtn = document.getElementById('exportBtn');
+        const newAnalysisBtn = document.getElementById('newAnalysisBtn');
+        const statsDiv = document.getElementById('stats');
+        const resultsTable = document.querySelector('#resultsTable tbody');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const mapPreview = document.getElementById('mapPreview');
+
+        // Текущие данные
+        let currentAnalysisData = null;
+
+        // ==================== ОБРАБОТКА ФАЙЛОВ ====================
+        
+        // Клик по области загрузки
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Выбор файла
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Показываем информацию о файле
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            
+            // Показываем настройки
+            settingsSection.style.display = 'block';
+            settingsSection.scrollIntoView({ behavior: 'smooth' });
+
+            // Обновляем текст кнопки загрузки
+            uploadArea.querySelector('h5').textContent = 'Файл выбран';
+            uploadArea.querySelector('.upload-icon').innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+
+            // Отправляем файл для получения столбцов
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showProgress(30);
+                const response = await fetch('/preview_columns', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                showProgress(70);
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                // Заполняем выпадающий список столбцов
+                columnName.innerHTML = '<option value="">Выберите столбец...</option>';
+                data.columns.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    columnName.appendChild(option);
+                });
+
+                columnName.disabled = false;
+                analyzeBtn.disabled = false;
+                showProgress(100);
+                
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 500);
+
+            } catch (error) {
+                showError('Ошибка при чтении файла: ' + error.message);
+            }
+        });
+
+        // ==================== DRAG AND DROP ====================
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('dragover');
+                uploadArea.querySelector('h5').textContent = 'Отпустите для загрузки';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('dragover');
+                uploadArea.querySelector('h5').textContent = 'Перетащите файл сюда';
+            }, false);
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        }, false);
+
+        // ==================== АНАЛИЗ ДАННЫХ ====================
+        
+        analyzeBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Выберите файл');
+                return;
+            }
+
+            const selectedColumn = columnName.value;
+            if (!selectedColumn) {
+                showError('Выберите столбец с координатами');
+                return;
+            }
+
+            // Показываем загрузку
+            analyzeBtn.disabled = true;
+            loader.style.display = 'block';
+            progressContainer.style.display = 'block';
+            showProgress(10);
+
+            // Подготавливаем данные
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('column_name', selectedColumn);
+            formData.append('radius_m', document.getElementById('radius').value);
+            formData.append('min_points', document.getElementById('minPoints').value);
+            formData.append('max_results', '10');
+
+            try {
+                showProgress(30);
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                showProgress(80);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Сохраняем данные
+                currentAnalysisData = data;
+                
+                // Показываем результаты
+                showProgress(100);
+                showResults(data);
+
+            } catch (error) {
+                showError('Ошибка при анализе: ' + error.message);
+            } finally {
+                analyzeBtn.disabled = false;
+                loader.style.display = 'none';
+                
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 500);
+            }
+        });
+
+        // ==================== ФУНКЦИИ ПОКАЗА РЕЗУЛЬТАТОВ ====================
+        
+        function showResults(data) {
+            // Показываем секцию результатов
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Обновляем статистику
+            statsDiv.innerHTML = `
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <div class="stat-number">${data.total_points}</div>
+                        <p><i class="fas fa-map-pin me-2"></i>Всего точек</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-box" style="background: linear-gradient(135deg, #20c997 0%, #198754 100%);">
+                        <div class="stat-number">${data.concentrations_found}</div>
+                        <p><i class="fas fa-bullseye me-2"></i>Концентраций</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-box" style="background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);">
+                        <div class="stat-number">${data.max_distance_km.toFixed(2)}</div>
+                        <p><i class="fas fa-ruler me-2"></i>Диаметр (км)</p>
+                    </div>
+                </div>
+            `;
+
+            // Обновляем ссылку на карту
+            if (data.map_url) {
+                mapLink.href = data.map_url;
+                mapLink.onclick = () => {
+                    window.open(data.map_url, '_blank');
+                    return false;
+                };
+                
+                // Обновляем превью карты
+                mapPreview.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-map-marked-alt fa-3x mb-3"></i>
+                        <p>Карта с ${data.total_points} точками</p>
+                        <button class="btn btn-sm btn-light mt-2" onclick="window.open('${data.map_url}', '_blank')">
+                            <i class="fas fa-external-link-alt me-2"></i>Открыть в новом окне
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Заполняем таблицу
+            resultsTable.innerHTML = '';
+            data.concentrations.forEach((conc, index) => {
+                const row = resultsTable.insertRow();
+                row.innerHTML = `
+                    <td class="fw-bold">${index + 1}</td>
+                    <td>
+                        <div class="tooltip-custom">
+                            ${conc.address.length > 40 ? conc.address.substring(0, 40) + '...' : conc.address}
+                            <span class="tooltiptext">${conc.address}</span>
+                        </div>
+                    </td>
+                    <td><code>${conc.center[0].toFixed(6)}</code></td>
+                    <td><code>${conc.center[1].toFixed(6)}</code></td>
+                    <td class="text-center">
+                        <span class="badge-custom">${conc.count}</span>
+                    </td>
+                    <td>${conc.avg_distance ? conc.avg_distance.toFixed(1) + ' м' : '-'}</td>
+                    <td>${conc.density ? conc.density.toFixed(1) + ' т/км²' : '-'}</td>
+                `;
+            });
+        }
+
+        // ==================== ЭКСПОРТ РЕЗУЛЬТАТОВ ====================
+        
+        exportBtn.addEventListener('click', async () => {
+            if (!currentAnalysisData || !currentAnalysisData.concentrations) {
+                showError('Нет данных для экспорта');
+                return;
+            }
+
+            try {
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Экспорт...';
+
+                const response = await fetch('/export_excel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        concentrations: currentAnalysisData.concentrations
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Скачиваем файл
+                window.location.href = data.download_url;
+                
+                showSuccess('Файл экспортирован успешно!');
+
+            } catch (error) {
+                showError('Ошибка при экспорте: ' + error.message);
+            } finally {
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = '<i class="fas fa-file-excel me-2"></i>Экспорт результатов в Excel';
+            }
+        });
+
+        // ==================== НОВЫЙ АНАЛИЗ ====================
+        
+        newAnalysisBtn.addEventListener('click', () => {
+            // Сброс формы
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            columnName.innerHTML = '<option value="">Загрузите файл чтобы увидеть столбцы...</option>';
+            columnName.disabled = true;
+            resultsSection.style.display = 'none';
+            settingsSection.style.display = 'none';
+            analyzeBtn.disabled = true;
+            
+            // Сброс области загрузки
+            uploadArea.querySelector('h5').textContent = 'Перетащите файл сюда или кликните для выбора';
+            uploadArea.querySelector('.upload-icon').innerHTML = '<i class="fas fa-cloud-upload-alt"></i>';
+            
+            // Прокрутка к началу
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            showInfo('Готово к новому анализу! Загрузите Excel файл.');
+        });
+
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showProgress(percent) {
+            progressBar.style.width = percent + '%';
+        }
+
+        function showError(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show alert-custom';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Добавляем в начало контейнера
+            document.querySelector('.main-container').insertBefore(alertDiv, document.querySelector('.main-container').firstChild);
+            
+            // Автоматически удаляем через 5 секунд
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show alert-custom';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.querySelector('.main-container').insertBefore(alertDiv, document.querySelector('.main-container').firstChild);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function showInfo(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-info alert-dismissible fade show alert-custom';
+            alertDiv.innerHTML = `
+                <i class="fas fa-info-circle me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.querySelector('.main-container').insertBefore(alertDiv, document.querySelector('.main-container').firstChild);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+        
+        // Запуск очистки старых файлов при загрузке
+        window.addEventListener('load', () => {
+            fetch('/cleanup', { method: 'POST' });
+        });
+    </script>
+</body>
+</html>
