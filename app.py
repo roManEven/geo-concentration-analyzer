@@ -62,7 +62,7 @@ def find_concentrations_optimized(coords, radius_m=500, min_points=10, max_resul
     # Преобразуем в numpy для скорости
     coords_array = np.array(coords)
     
-    # Используем DBSCAN для кластеризации
+    # DBSCAN для кластеризации
     # Переводим радиус в градусы (приблизительно)
     eps = radius_m / 111000  # 1 градус ≈ 111км
     
